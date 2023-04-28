@@ -1,4 +1,4 @@
-import { Keyboarded } from "./scenese/keyboard";
+import { Keyboarded } from "./scenes/keyboard";
 
 const project = new Keyboarded();
 

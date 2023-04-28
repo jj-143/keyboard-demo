@@ -21,8 +21,6 @@ export class Keyboarded extends Project {
   }
 
   setupKeyboard() {
-    // loadGLTF("http://localhost:9090/01-test.glb").then((gltf) => {
-    // loadGLTF(`${config.ASSET_BASE_URL}/keyboard.glb`).then((gltf) => {
     loadGLTF(model).then((gltf) => {
       this.scene.add(gltf.scene);
 

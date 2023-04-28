@@ -52,8 +52,6 @@ export class Project {
   }
 
   setupEnvironment() {
-    // loadRGBE(`${config.ASSET_BASE_URL}/environment.hdr`).then(([texture]) => {
-
     loadRGBE(environment).then(([texture]) => {
       texture.mapping = THREE.EquirectangularReflectionMapping;
       // this.scene.background = texture;
