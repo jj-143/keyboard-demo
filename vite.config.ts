@@ -1,9 +1,13 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
-export default defineConfig({
-  base: "/",
-  build: {
-    outDir: "docs",
-  },
-  assetsInclude: ["src/assets/*.hdr", "src/assets/*.glb"],
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "");
+
+  return {
+    base: env.BASE ?? "/",
+    build: {
+      outDir: "docs",
+    },
+    assetsInclude: ["src/assets/*.hdr", "src/assets/*.glb"],
+  };
 });
