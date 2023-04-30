@@ -4,6 +4,7 @@ import { loadGLTF } from "../lib/utils";
 import { Project } from "../lib/classed";
 
 import model from "../assets/keyboard.glb";
+import model2 from "../assets/keyboard-air75-1.glb";
 
 export class Keyboarded extends Project {
   keyObjectMap: Record<string, THREE.Mesh | THREE.Object3D> = {};
@@ -21,7 +22,7 @@ export class Keyboarded extends Project {
   }
 
   setupKeyboard() {
-    loadGLTF(model).then((gltf) => {
+    loadGLTF(model2).then((gltf) => {
       this.scene.add(gltf.scene);
 
       const keys = gltf.scene.getObjectByName("keys");
