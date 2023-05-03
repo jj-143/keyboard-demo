@@ -21,8 +21,12 @@ export class Project {
     this.camera = this.createCamera();
 
     // Lights
-    const light = new THREE.PointLight(0xffffff, 0.5, 100);
-    light.position.set(1, 1, 1);
+    // const light = new THREE.PointLight(0xffffff, 0.5, 100);
+    // light.position.set(1, 1, 1);
+    // const light = new THREE.AmbientLight(0xffffff, 0.6);
+    const light = new THREE.DirectionalLight(0xffffff, 0.4);
+    light.position.set(0, 1, 0);
+    light.lookAt(0, 0, 0);
     this.scene.add(light);
 
     // const pointLightHelper = new THREE.PointLightHelper(light, 1);
@@ -76,13 +80,15 @@ export class Project {
       50,
       window.innerWidth / window.innerHeight,
       0.25,
-      20
+      2000
     );
     camera.position.set(
-      4.107283160075731,
-      3.7345246574613076,
-      4.387633924068929
+      81.10620484106686,
+      155.0603052288509,
+      308.8672472710202
     );
+    console.log(camera);
+
     camera.rotation.set(
       -0.3071302604487876,
       0.7803424553528313,
@@ -95,7 +101,7 @@ export class Project {
     const controls = new OrbitControls(this.camera, this.renderer.domElement);
     controls.addEventListener("change", this.render.bind(this)); // use if there is no animation loop
     controls.minDistance = 2;
-    controls.maxDistance = 10;
+    controls.maxDistance = 1000;
     controls.target.set(0, 0, -0.2);
     controls.update();
 

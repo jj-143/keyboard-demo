@@ -3,8 +3,8 @@ import { color } from "../lib/shared";
 import { loadGLTF } from "../lib/utils";
 import { Project } from "../lib/classed";
 
-import model from "../assets/keyboard.glb";
-import model2 from "../assets/keyboard-air75-1.glb";
+// import model from "../assets/keyboard.glb";
+// import model2 from "../assets/keyboard-air75-1.glb";
 
 export class Keyboarded extends Project {
   keyObjectMap: Record<string, THREE.Mesh | THREE.Object3D> = {};
@@ -22,29 +22,39 @@ export class Keyboarded extends Project {
   }
 
   setupKeyboard() {
-    loadGLTF(model2).then((gltf) => {
-      this.scene.add(gltf.scene);
+    loadGLTF(`${import.meta.env.VITE_ASSET_BASE_URL}/air75-1.glb`).then(
+      (gltf) => {
+        this.scene.add(gltf.scene);
+        gltf.scene.scale.multiplyScalar(80);
 
-      const keys = gltf.scene.getObjectByName("keys");
-      keys?.children.forEach((key) => {
-        const keyName = key.name[4];
-        console.log(key.name, keyName);
-        key.userData["key"] = keyName;
-        this.keyObjectMap[keyName] = key;
-      });
+        const keys = gltf.scene.getObjectByName("Keys");
 
-      // set key levels
-      const singleKey = keys?.children[0];
-      this.keyUpY = singleKey?.position.y ?? 0;
-      this.keyDownY = this.keyUpY - this.keyDistance;
+        keys?.children.forEach((row) => {
+          row.children.forEach((key) => {
+            const name: string = key.userData["name"];
+            const keyName = name.match(/-(.*)$/)?.[1];
+            if (!keyName) {
+              console.log("noname:", name);
+              return;
+            }
+            this.keyObjectMap[keyName] = key;
+          });
+        });
 
-      this.render();
-    });
+        // set key levels
+        const singleKey = this.keyObjectMap["KeyA"];
+        this.keyUpY = singleKey?.position.y ?? 0;
+        this.keyDownY = this.keyUpY - this.keyDistance;
+
+        this.render();
+      }
+    );
   }
 
   pressKey(key: string) {
     const object = this.getKeyObjByKey(key);
     if (!object) return;
+
     object.position.setY(this.keyDownY);
     this.render();
   }
@@ -58,11 +68,12 @@ export class Keyboarded extends Project {
 
   attachEvents() {
     document.addEventListener("keydown", (e) => {
-      this.pressKey(e.key);
+      e.preventDefault();
+      this.pressKey(e.code);
     });
 
     document.addEventListener("keyup", (e) => {
-      this.releaseKey(e.key);
+      this.releaseKey(e.code);
     });
   }
 
@@ -81,7 +92,7 @@ export class Keyboarded extends Project {
       // calculate objects intersecting the picking ray
       const intersects = raycaster.intersectObjects(this.scene.children);
 
-      console.log(intersects);
+      // console.log(intersects);
 
       const intersect = intersects.find((it) =>
         it.object.parent?.name.startsWith("key-")
