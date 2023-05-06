@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { TransformControls } from "three/examples/jsm/controls/TransformControls";
-import { loadGLTF, loadRGBE } from "./utils";
+import { loadRGBE } from "./utils";
 
 import environment from "../assets/environment.hdr";
 
@@ -75,25 +75,13 @@ export class Project {
   }
 
   createCamera(): THREE.PerspectiveCamera {
-    // Camera
     const camera = new THREE.PerspectiveCamera(
       50,
       window.innerWidth / window.innerHeight,
       0.25,
       2000
     );
-    camera.position.set(
-      81.10620484106686,
-      155.0603052288509,
-      308.8672472710202
-    );
-    console.log(camera);
-
-    camera.rotation.set(
-      -0.3071302604487876,
-      0.7803424553528313,
-      0.21953732819373636
-    );
+    camera.position.set(0, 124.1, 246.77444985578987);
     return camera;
   }
 
@@ -102,9 +90,10 @@ export class Project {
     controls.addEventListener("change", this.render.bind(this)); // use if there is no animation loop
     controls.minDistance = 2;
     controls.maxDistance = 1000;
-    controls.target.set(0, 0, -0.2);
-    controls.update();
 
+    // about the mid point of the screen
+    controls.target.set(0, 35, 0);
+    controls.update();
     return controls;
   }
 
