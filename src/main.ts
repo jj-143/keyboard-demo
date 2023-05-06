@@ -5,7 +5,11 @@ import Keyboard from "./objects/keyboard";
 const project = new Project();
 const renderFn = project.render.bind(project);
 
-new Keyboard(project.scene, renderFn);
-new Monitor(project.scene, renderFn);
+const keyboard = new Keyboard(project.scene, renderFn);
+const monitor = new Monitor(project.scene, renderFn);
+
+keyboard.onInput((key) => {
+  monitor.handleKeyInput(key);
+});
 
 project.render();

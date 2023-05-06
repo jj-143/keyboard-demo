@@ -155,22 +155,24 @@ export default class Monitor {
   // interactive stuff
 
   setupKeyboardEvent() {
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Backspace") {
-        this.updateContent(
-          this.content.substring(0, Math.max(0, this.content.length - 1))
-        );
-        return;
-      }
-
-      if (e.key === "Enter") {
-        this.updateContent(this.content + "\n");
-        return;
-      }
-
-      if (!e.key.match(/^[\w`~!@#$%^&*()_+-=\[\]{}\\|'"<>? ]$/)) return;
-
-      this.updateContent(this.content + e.key);
-    });
+    document.addEventListener("keydown", (e) => this.handleKeyInput(e.key));
   }
+
+  handleKeyInput = (key: string) => {
+    if (key === "Backspace") {
+      this.updateContent(
+        this.content.substring(0, Math.max(0, this.content.length - 1))
+      );
+      return;
+    }
+
+    if (key === "Enter") {
+      this.updateContent(this.content + "\n");
+      return;
+    }
+
+    if (!key.match(/^[\w`~!@#$%^&*()_+-=\[\]{}\\|'"<>? ]$/)) return;
+
+    this.updateContent(this.content + key);
+  };
 }

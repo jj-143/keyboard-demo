@@ -75,6 +75,29 @@ export class Project {
     // about the mid point of the screen
     controls.target.set(0, 35, 0);
     controls.update();
+
+    const preventOnKeyboard = (event: PointerEvent) => {
+      const raycaster = new THREE.Raycaster();
+      const pointer = new THREE.Vector2();
+      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      const camera = this.scene.getObjectByName("main-camera") as THREE.Camera;
+      raycaster.setFromCamera(pointer, camera);
+      const board = this.scene.getObjectByName("Board") as THREE.Object3D;
+      const intersects = raycaster.intersectObject(board);
+      if (intersects.length) {
+        controls.enabled = false;
+        window.addEventListener("pointerup", enable);
+      }
+    };
+
+    const enable = () => {
+      controls.enabled = true;
+      window.removeEventListener("pointerup", enable);
+    };
+    window.addEventListener("pointerdown", preventOnKeyboard);
+
     return controls;
   }
 

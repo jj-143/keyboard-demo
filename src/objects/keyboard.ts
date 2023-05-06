@@ -7,9 +7,8 @@ export default class Keyboard {
 
   keyObjectMap: Record<string, THREE.Mesh | THREE.Object3D> = {};
 
-  keyDistance = 0.04;
-  keyDownY = 0;
-  keyUpY = 0;
+  #onInputListeners: Set<(key: string) => void> = new Set();
+  #pressingKeys: Set<THREE.Object3D> = new Set();
 
   constructor(scene: THREE.Scene, render: () => void) {
     this.scene = scene;
@@ -47,25 +46,26 @@ export default class Keyboard {
           });
         });
 
-        // set key levels
-        const singleKey = this.keyObjectMap["KeyA"];
-        this.keyUpY = singleKey?.position.y ?? 0;
-        this.keyDownY = this.keyUpY - this.keyDistance;
-
         this.render();
       }
     );
   }
 
-  pressKey(key: string) {
-    const object = this.getKeyObjByKey(key);
+  pressKey(keyOrObject: string | THREE.Object3D) {
+    const object =
+      typeof keyOrObject === "string"
+        ? this.getKeyObjByKey(keyOrObject)
+        : keyOrObject;
     if (!object) return;
     object.position.fromArray(object.userData.downPos as THREE.Vector3Tuple);
     this.render();
   }
 
-  releaseKey(key: string) {
-    const object = this.getKeyObjByKey(key);
+  releaseKey(keyOrObject: string | THREE.Object3D) {
+    const object =
+      typeof keyOrObject === "string"
+        ? this.getKeyObjByKey(keyOrObject)
+        : keyOrObject;
     if (!object) return;
     object.position.fromArray(object.userData.upPos as THREE.Vector3Tuple);
     this.render();
@@ -90,33 +90,87 @@ export default class Keyboard {
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
 
-    const render = () => {
+    const findKey = () => {
       // update the picking ray with the camera and pointer position
       const camera = this.scene.getObjectByName("main-camera") as THREE.Camera;
       raycaster.setFromCamera(pointer, camera);
 
       // calculate objects intersecting the picking ray
-      const intersects = raycaster.intersectObjects(this.scene.children);
+      const keys = this.scene.getObjectByName("Keys") as THREE.Object3D;
+      const intersects = raycaster.intersectObject(keys);
 
-      const intersect = intersects.find((it) =>
-        it.object.parent?.name.startsWith("key-")
-      );
-
-      if (intersect) {
-        const key = intersect.object.parent?.userData["key"];
-        this.pressKey(key);
-        setTimeout(() => {
-          this.releaseKey(key);
-        }, 100);
+      let intersect: THREE.Object3D | null = null;
+      for (let i = 0; i < intersects.length; i++) {
+        const it = intersects[i];
+        let current: typeof it.object | null = it.object;
+        while (current) {
+          if (current.parent?.userData.name?.startsWith("Row")) {
+            intersect = current;
+            break;
+          }
+          current = current.parent;
+        }
+        if (intersect) break;
       }
 
-      this.render();
+      return intersect;
     };
 
-    window.addEventListener("click", (event) => {
+    window.addEventListener("pointerdown", (event) => {
       pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
       pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      window.requestAnimationFrame(render);
+
+      const key = findKey();
+      if (key) {
+        this.#pressingKeys.add(key);
+        this.pressKey(key);
+        const char = toKeyCharacter(key);
+        if (char) {
+          this.#onInputListeners.forEach((callback) => {
+            callback(char);
+          });
+        }
+
+        const release = () => {
+          this.#pressingKeys.delete(key);
+          this.releaseKey(key);
+          window.removeEventListener("pointerup", release);
+        };
+        window.addEventListener("pointerup", release);
+      }
     });
   }
+
+  onInput(callback: (key: string) => void) {
+    this.#onInputListeners.add(callback);
+  }
+}
+
+// utils
+
+function toKeyCharacter(keyObject: THREE.Object3D): string | undefined {
+  const name: string = keyObject.userData["name"];
+  const key = name.match(/-(.*)$/)?.[1];
+  if (!key) return;
+
+  if (key.startsWith("Key") || key.startsWith("Digit")) {
+    return key.replace("Key", "").replace("Digit", "").toLocaleLowerCase();
+  }
+
+  return (
+    {
+      Backquote: "`",
+      Minus: "-",
+      Equal: "=",
+      BracketLeft: "[",
+      BracketRight: "]",
+      Backslash: "\\",
+      Semicolon: ";",
+      Quote: "'",
+      Comma: ",",
+      Period: ".",
+      Slash: "/",
+      Space: " ",
+    }[key] ?? key
+  );
 }
