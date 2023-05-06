@@ -37,6 +37,13 @@ export default class Keyboard {
               return;
             }
             this.keyObjectMap[keyName] = key;
+
+            // pre-calculate key press positions
+            key.userData.upPos = key.position.toArray();
+            key.userData.downPos = key.position
+              .clone()
+              .add(new THREE.Vector3(0, -0.027, 0))
+              .toArray();
           });
         });
 
@@ -53,15 +60,14 @@ export default class Keyboard {
   pressKey(key: string) {
     const object = this.getKeyObjByKey(key);
     if (!object) return;
-
-    object.position.setY(this.keyDownY);
+    object.position.fromArray(object.userData.downPos as THREE.Vector3Tuple);
     this.render();
   }
 
   releaseKey(key: string) {
     const object = this.getKeyObjByKey(key);
     if (!object) return;
-    object.position.setY(this.keyUpY);
+    object.position.fromArray(object.userData.upPos as THREE.Vector3Tuple);
     this.render();
   }
 
