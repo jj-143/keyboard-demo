@@ -1,11 +1,11 @@
-import { Monitor } from "./lib/monitor";
-import { Keyboarded } from "./scenes/keyboard";
+import { Project } from "./lib/project";
+import Monitor from "./objects/monitor";
+import Keyboard from "./objects/keyboard";
 
-const project = new Keyboarded();
-const monitor = new Monitor(
-  project.scene,
-  project.renderer,
-  project.render.bind(project)
-);
+const project = new Project();
+const renderFn = project.render.bind(project);
+
+new Keyboard(project.scene, renderFn);
+new Monitor(project.scene, renderFn);
 
 project.render();

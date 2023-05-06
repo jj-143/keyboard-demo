@@ -1,27 +1,26 @@
 import * as THREE from "three";
-import { color } from "../lib/shared";
 import { loadGLTF } from "../lib/utils";
-import { Project } from "../lib/classed";
 
-// import model from "../assets/keyboard.glb";
-// import model2 from "../assets/keyboard-air75-1.glb";
+export default class Keyboard {
+  scene: THREE.Scene;
+  render: () => void;
 
-export class Keyboarded extends Project {
   keyObjectMap: Record<string, THREE.Mesh | THREE.Object3D> = {};
-  keyOrder = "qwertyuiop[]asdfghjkl;'zxcvbnm,./";
 
   keyDistance = 0.04;
   keyDownY = 0;
   keyUpY = 0;
 
-  constructor() {
-    super();
-    this.setupKeyboard();
+  constructor(scene: THREE.Scene, render: () => void) {
+    this.scene = scene;
+    this.render = render;
+
+    this.setupModel();
     this.attachEvents();
     this.setupMouse();
   }
 
-  setupKeyboard() {
+  setupModel() {
     loadGLTF(`${import.meta.env.VITE_ASSET_BASE_URL}/air75-1.glb`).then(
       (gltf) => {
         this.scene.add(gltf.scene);
@@ -87,12 +86,11 @@ export class Keyboarded extends Project {
 
     const render = () => {
       // update the picking ray with the camera and pointer position
-      raycaster.setFromCamera(pointer, this.camera);
+      const camera = this.scene.getObjectByName("main-camera") as THREE.Camera;
+      raycaster.setFromCamera(pointer, camera);
 
       // calculate objects intersecting the picking ray
       const intersects = raycaster.intersectObjects(this.scene.children);
-
-      // console.log(intersects);
 
       const intersect = intersects.find((it) =>
         it.object.parent?.name.startsWith("key-")
@@ -106,7 +104,7 @@ export class Keyboarded extends Project {
         }, 100);
       }
 
-      this.renderer.render(this.scene, this.camera);
+      this.render();
     };
 
     window.addEventListener("click", (event) => {
@@ -115,43 +113,4 @@ export class Keyboarded extends Project {
       window.requestAnimationFrame(render);
     });
   }
-}
-
-///////// Utils
-
-function createKeys(): THREE.Mesh[] {
-  const rowM = 0.4 + 0.15;
-  const row1 = createRow(12);
-  positionRow(row1, [0, 0.2, 0]);
-  const row2 = createRow(11);
-  positionRow(row2, [0.2, 0.2, rowM]);
-  const row3 = createRow(10);
-  positionRow(row3, [0.4, 0.2, rowM * 2]);
-
-  return row1.concat(row2, row3);
-}
-
-function createRow(count: number): THREE.Mesh[] {
-  const keys = Array.from(Array(count)).map((_, idx) => {
-    const geometry = new THREE.BoxGeometry(0.4, 0.15, 0.4);
-    const material = new THREE.MeshPhongMaterial({
-      color: color.color1,
-      shininess: 1,
-      reflectivity: 1,
-    });
-    const cube = new THREE.Mesh(geometry, material);
-    return cube;
-  });
-
-  return keys;
-}
-
-function positionRow(
-  row: THREE.Mesh[],
-  startingPosition: [number, number, number]
-) {
-  const [x, y, z] = startingPosition;
-  row.forEach((key, idx) => {
-    key.position.set(x + (0.4 + 0.15) * idx, y, z);
-  });
 }

@@ -17,22 +17,8 @@ export class Project {
     document.body.appendChild(container);
 
     this.scene = new THREE.Scene();
-
     this.camera = this.createCamera();
-
-    // Lights
-    // const light = new THREE.PointLight(0xffffff, 0.5, 100);
-    // light.position.set(1, 1, 1);
-    // const light = new THREE.AmbientLight(0xffffff, 0.6);
-    const light = new THREE.DirectionalLight(0xffffff, 0.4);
-    light.position.set(0, 1, 0);
-    light.lookAt(0, 0, 0);
-    this.scene.add(light);
-
-    // const pointLightHelper = new THREE.PointLightHelper(light, 1);
-    // this.scene.add(pointLightHelper);
-
-    // Renderer setup
+    this.scene.add(this.camera);
 
     const renderer = (this.renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -46,32 +32,26 @@ export class Project {
 
     window.addEventListener("resize", this.onWindowResize.bind(this));
 
+    // temporary lights
+    const light = new THREE.DirectionalLight(0xffffff, 0.4);
+    light.position.set(0, 1, 0);
+    light.lookAt(0, 0, 0);
+    this.scene.add(light);
+
     // Scene setup
     this.setupEnvironment();
 
-    // helpers
+    // enables mouse look around - rotate, pan, zoom
     this.orbitControls = this.createOrbitControls();
-    this.addHelpers(light);
-    this.addAxisHelper();
   }
 
   setupEnvironment() {
     loadRGBE(environment).then(([texture]) => {
       texture.mapping = THREE.EquirectangularReflectionMapping;
-      // this.scene.background = texture;
       this.scene.background = new THREE.Color(0x77bebe);
       this.scene.environment = texture;
       this.render();
     });
-  }
-
-  onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-
-    this.render();
   }
 
   createCamera(): THREE.PerspectiveCamera {
@@ -82,6 +62,7 @@ export class Project {
       2000
     );
     camera.position.set(0, 124.1, 246.77444985578987);
+    camera.name = "main-camera";
     return camera;
   }
 
@@ -97,18 +78,6 @@ export class Project {
     return controls;
   }
 
-  addHelpers(object: THREE.Object3D) {
-    const tc = new TransformControls(this.camera, this.renderer.domElement);
-
-    tc.addEventListener("change", this.render.bind(this));
-    tc.addEventListener("dragging-changed", (event) => {
-      this.orbitControls.enabled = !event.value;
-    });
-
-    // tc.attach(object);
-    // this.scene.add(tc);
-  }
-
   addAxisHelper() {
     // const axesHelper = new THREE.AxesHelper(5);
     // this.scene.add(axesHelper);
@@ -116,5 +85,12 @@ export class Project {
 
   render() {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  onWindowResize() {
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.render();
   }
 }
