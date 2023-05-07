@@ -4,10 +4,17 @@ import { color } from "../lib/shared";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { Font, FontLoader } from "three/examples/jsm/loaders/FontLoader";
 
+const LINE_SEP = "\u2028";
+
+const REGEX_SOFT_LINES = new RegExp(LINE_SEP, "g");
+const REGEX_LINES = new RegExp(`(${LINE_SEP}|\n)`, "g");
+
 export default class Monitor {
   scene: THREE.Scene;
   renderFn: () => void;
 
+  cursor = [0, 0];
+  printWidth = 55;
   content: string = "i just hope ur doing well";
   blinkAnimationId?: number;
 
@@ -43,6 +50,10 @@ export default class Monitor {
     });
 
     this.setupKeyboardEvent();
+
+    // set cursor to the end of content
+    const lines = this.content.split("\n");
+    this.cursor = [lines.length - 1, lines[lines.length - 1].length];
   }
 
   setupModel() {
@@ -78,7 +89,10 @@ export default class Monitor {
       obj.mesh?.remove();
     }
 
-    const geometry = new TextGeometry(this.content, {
+    // display soft lines as hard lines
+    const toRender = this.content.replace(REGEX_SOFT_LINES, "\n");
+
+    const geometry = new TextGeometry(toRender, {
       font: this.font,
       size: 4,
       height: 1,
@@ -118,12 +132,18 @@ export default class Monitor {
 
     this.animateBlink();
   }
+
   positionCaret() {
-    const lines = this.content.split("\n");
+    const row = this.content.match(REGEX_LINES)?.length ?? 0;
+    // don't roll over the cursor to the next line when at the end of a line (printWidth)
+    // e.g. printWidth(3):
+    // col - 0, 1, 2, 3, 1, 2, 3, 1, 2, 3
+    const col = ((this.cursor[1] - 1) % this.printWidth) + 1;
+
     if (this.objectData.caret.mesh) {
       const { mesh } = this.objectData.caret;
-      mesh.position.x = -100 + 10 + lines[lines.length - 1].length * 3.3 + 2;
-      mesh.position.y = 100 - 20 + 25 + lines.length * -7.8 + 8 + 2;
+      mesh.position.x = -100 + 10 + col * 3.3 + 2;
+      mesh.position.y = 100 - 20 + 25 + row * -7.8 + 2;
     }
   }
 
@@ -158,21 +178,63 @@ export default class Monitor {
     document.addEventListener("keydown", (e) => this.handleKeyInput(e.key));
   }
 
+  #handleBackspace() {
+    const lines = this.content.split("\n");
+    const [row, col] = this.cursor;
+
+    if (col > 0) {
+      this.cursor[1] -= 1;
+      const line = lines[row].replace(REGEX_SOFT_LINES, "");
+      const draft = line.substring(0, col - 1) + line.substring(col);
+      lines.splice(row, 1, wrapLine(draft, this.printWidth));
+
+      this.updateContent(lines.join("\n"));
+    } else {
+      // remove line
+      this.cursor[0] = Math.max(0, row - 1);
+      this.cursor[1] = lines[this.cursor[0]].replace(
+        REGEX_SOFT_LINES,
+        ""
+      ).length;
+      this.updateContent(lines.slice(0, this.cursor[0] + 1).join("\n"));
+    }
+    return;
+  }
+
+  #handleInsert(text: string) {
+    const [row, col] = this.cursor;
+    const lines = this.content.split("\n");
+
+    const line = lines[row].replace(REGEX_SOFT_LINES, "");
+    const draft = line.substring(0, col) + text + line.substring(col);
+
+    // replace current line
+    lines.splice(row, 1, wrapLine(draft, this.printWidth));
+
+    this.cursor[1] += text.length;
+    this.updateContent(lines.join("\n"));
+  }
+
   handleKeyInput = (key: string) => {
     if (key === "Backspace") {
-      this.updateContent(
-        this.content.substring(0, Math.max(0, this.content.length - 1))
-      );
-      return;
+      return this.#handleBackspace();
     }
 
     if (key === "Enter") {
+      const [row] = this.cursor;
+      this.cursor = [row + 1, 0];
       this.updateContent(this.content + "\n");
       return;
     }
 
+    // insert text
     if (!key.match(/^[\w`~!@#$%^&*()_+-=\[\]{}\\|'"<>? ]$/)) return;
-
-    this.updateContent(this.content + key);
+    this.#handleInsert(key);
   };
+}
+
+function wrapLine(line: string, printWidth: number): string {
+  return (
+    line.match(new RegExp(`.{1,${printWidth}}`, "g"))?.join(LINE_SEP) ?? ""
+  );
 }
